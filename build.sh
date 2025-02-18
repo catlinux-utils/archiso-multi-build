@@ -7,6 +7,7 @@ cleanup() {
 
 profile=""
 build_base_dir="/tmp/archiso_builder"
+iso_name="archlinux"
 main_dir=$(pwd)
 
 usage() {
@@ -48,14 +49,14 @@ build_profiles() {
         echo "Building ISO for profile: $profile"
         profile_name=$(basename "$profile")
         mkdir -p "$main_dir/iso/$profile_name"
-        echo "\niso_name=$profile_name" >>"$profile/profiledef.sh"
+        echo "iso_name=$iso_name-$profile_name" >>"$profile/profiledef.sh"
         sudo sh -c "mkarchiso -v -r -w /tmp/archiso-build-tmp -o '$main_dir/iso/$profile_name' '$profile'"
         echo "Completed building ISO for: $profile"
     done
     echo "All profile builds complete"
 }
 
-while getopts ":hp:c" option; do
+while getopts ":hp:cn:" option; do
     case $option in
     h)
         usage
@@ -70,6 +71,10 @@ while getopts ":hp:c" option; do
         echo "Cleaning /tmp/archiso-build-tmp"
         sudo rm -rf "/tmp/archiso-build-tmp"
         exit 1
+        ;;
+    n)
+        echo "Iso name is $OPTARG"
+        iso_name=$OPTARG
         ;;
     \?)
         echo "Error: Invalid option"
