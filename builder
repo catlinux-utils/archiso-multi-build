@@ -11,9 +11,12 @@ iso_name="archlinux"
 main_dir=$(pwd)
 
 usage() {
-    echo "Usage: $0 [-p <profile>] [-h]"
-    echo "  -p <profile>   Enable flag"
-    echo "  -h             Show this help message"
+    echo "Usage: $0 [-p <profile>] [-c] [-i] [-n <iso_name>] [-h]"
+    echo "  -p <profile>   Specify profile to build (use 'all' for all profiles)"
+    echo "  -c            Clean build directory"
+    echo "  -i            Build ISO only"
+    echo "  -n <iso_name> Set custom ISO name"
+    echo "  -h            Show this help message"
     exit 1
 }
 
@@ -56,6 +59,14 @@ build_profiles() {
     echo "All profile builds complete"
 }
 
+# Check if more than one option is used with c or i
+if [ "$*" == "-c" ] || [ "$*" == "-i" ]; then
+    : # Valid single option usage
+elif [[ "$*" == *"-c"* ]] || [[ "$*" == *"-i"* ]]; then
+    echo "Error: -c and -i options must be used alone"
+    usage
+fi
+
 while getopts ":hp:cn:" option; do
     case $option in
     h)
@@ -70,6 +81,11 @@ while getopts ":hp:cn:" option; do
         rm -rf "$build_base_dir"
         echo "Cleaning /tmp/archiso-build-tmp"
         sudo rm -rf "/tmp/archiso-build-tmp"
+        exit 1
+        ;;
+    i)
+        echo "Cleaning iso directory"
+        rm -rf "$main_dir/iso"
         exit 1
         ;;
     n)
