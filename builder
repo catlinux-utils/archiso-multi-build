@@ -20,6 +20,13 @@ usage() {
     exit 1
 }
 
+check_sudo() {
+    if ! sudo -v; then
+        echo "Error: This script requires sudo privileges."
+        exit 1
+    fi
+}
+
 merge_profiles() {
     echo "Starting profile merge..."
     if [ "$profile" == "" ]; then
@@ -33,7 +40,10 @@ merge_profiles() {
             echo "Merging profile: $profile_name"
             mkdir -p "$build_base_dir/$profile_name"
             cp -r "$main_dir"/base/* "$build_base_dir/$profile_name"
-            cp -r "$main_dir/$profile"/* "$build_base_dir/$profile_name"
+            if ! cp -r "$main_dir/$profile"/* "$build_base_dir/$profile_name"; then
+                echo "Error: Failed to copy profile $profile_name"
+                exit 1
+            fi
         done
     else
         if [ ! -d "$main_dir/profiles/$profile" ]; then
@@ -43,9 +53,13 @@ merge_profiles() {
         echo "Merging single profile: $profile"
         mkdir -p "$build_base_dir/$profile"
         cp -r "$main_dir"/base/* "$build_base_dir/$profile"
-        cp -r "$main_dir/profiles/$profile"/* "$build_base_dir/$profile"
+        if ! cp -r "$main_dir/profiles/$profile"/* "$build_base_dir/$profile"; then
+            echo "Error: Failed to copy profile $profile"
+            exit 1
+        fi
     fi
 }
+
 build_profiles() {
     echo "Starting profile build..."
     for profile in $build_base_dir/*; do
@@ -53,11 +67,17 @@ build_profiles() {
         profile_name=$(basename "$profile")
         mkdir -p "$main_dir/iso/$profile_name"
         echo "iso_name=$iso_name-$profile_name" >>"$profile/profiledef.sh"
-        sudo sh -c "mkarchiso -v -r -w /tmp/archiso-build-tmp -o '$main_dir/iso/$profile_name' '$profile'"
+        if ! sudo sh -c "mkarchiso -v -r -w /tmp/archiso-build-tmp -o '$main_dir/iso/$profile_name' '$profile'"; then
+            echo "Error: Failed to build ISO for profile $profile"
+            exit 1
+        fi
         echo "Completed building ISO for: $profile"
     done
     echo "All profile builds complete"
 }
+
+# Check sudo rights
+check_sudo
 
 # Check if more than one option is used with c or i
 if [ "$*" == "-c" ] || [ "$*" == "-i" ]; then
@@ -102,3 +122,4 @@ done
 merge_profiles
 
 build_profiles
+
